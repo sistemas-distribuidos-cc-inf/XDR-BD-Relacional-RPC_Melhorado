@@ -19,21 +19,30 @@ type User struct {
 type Cadastro string
 type Banco string
 
-var db sql.DB
-var err error
-
 func (t *Cadastro) CriaBanco(arg *Banco, res *string) error {
+	// Conectando ao mysql
+	db, err := sql.Open("mysql", "root:toor@tcp(localhost:3306)/")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Faz um ping no banco para testar a conexão
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Println("Criando Banco 'rpc' caso não exista")
 	_, err = db.Exec("CREATE DATABASE IF NOT EXISTS rpc")
 	if err != nil {
 		*res = "Falha"
-		//log.Fatal(err)
+		log.Fatal(err)
 	}
 	fmt.Println("Usando schemma rpc")
 	_, err = db.Exec("USE rpc")
 	if err != nil {
 		*res = "Falha"
-		//log.Fatal(err)
+		log.Fatal(err)
 	}
 
 	fmt.Println("Criando tabela pessoa caso não exita")
@@ -44,11 +53,25 @@ func (t *Cadastro) CriaBanco(arg *Banco, res *string) error {
 		*res = "Falha"
 		log.Fatal(err)
 	}
+	db.Close()
 	*res = "Sucesso"
 	return nil
 }
 
 func (t *Cadastro) AdicionaUsuario(user *User, res *string) error {
+
+	// Conectando ao mysql
+	db, err := sql.Open("mysql", "root:toor@tcp(localhost:3306)/")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Faz um ping no banco para testar a conexão
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	stmt, err := db.Prepare(`Insert Into usuario
              (nome, sobrenome)
              Values (?, ?)`)
@@ -63,25 +86,11 @@ func (t *Cadastro) AdicionaUsuario(user *User, res *string) error {
 
 	fmt.Println("Usuario adicionado: " + (*user).Nome + " " + (*user).Sobrenome)
 	*res = "Sucesso"
+	db.Close()
 	return nil
 }
 
 func main() {
-
-	fmt.Println("Tentando conectar ao mysql")
-	// Conectando ao mysql
-	db, err := sql.Open("mysql", "root:toor@tcp(localhost:3306)/")
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Empilha o fechamento da conexão com o banco
-	defer db.Close()
-	// Faz um ping no banco para testar a conexão
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	servicoCadastro := new(Cadastro)
 	rpc.Register(servicoCadastro)
 	porta := "localhost:1234"
